@@ -1,0 +1,17 @@
+name: Wii build
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkitppc:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pacman -S wii-freetype
+
+      - name: Compile Wii build
+        run: |
+          make
