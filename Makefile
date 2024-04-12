@@ -111,6 +111,7 @@ $(GENERATED):
 	python datasrc/compile.py client_content_source > $(GENERATED)/client_data.cpp
 	python datasrc/compile.py client_content_header > $(GENERATED)/client_data.h
 	python scripts/cmd5.py src/engine/shared/protocol.h $(GENERATED)/protocol.h src/game/tuning.h src/game/gamecore.cpp $(GENERATED)/protocol.h > $(GENERATED)/nethash.cpp
+	ls -R build
 
 #---------------------------------------------------------------------------------
 clean:

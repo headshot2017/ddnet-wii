@@ -9,11 +9,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install python
-        run: |
-          sudo apt update
-          sudo apt install --yes python3
-
       - name: Compile Wii build
         run: |
           make
