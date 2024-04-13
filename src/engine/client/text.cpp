@@ -525,7 +525,7 @@ public:
 
 	virtual float TextWidth(void *pFontSetV, float Size, const char *pText, int Length)
 	{
-		float len = str_length(pText) * Size;
+		float len = str_length(pText) * Size*0.65f;
 		return len;
 	}
 
@@ -593,7 +593,6 @@ public:
 		//RenderSetup(pFont, ActualSize);
 
 		//float Scale = 1/pSizeData->m_FontSize;
-		float Scale = 1.5f;
 
 		// set length
 		if(Length < 0)
@@ -605,7 +604,7 @@ public:
 		Graphics()->TextureSet(Client()->GetDebugFont());
 		Graphics()->QuadsBegin();
 		Graphics()->SetColor(m_TextR, m_TextG, m_TextB, m_TextA);
-		Graphics()->QuadsText(CursorX, CursorY, Size*Scale, pText);
+		Graphics()->QuadsText(CursorX, CursorY, Size*1.25f, pText);
 		Graphics()->QuadsEnd();
 
 		/*
