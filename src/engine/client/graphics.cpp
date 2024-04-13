@@ -374,20 +374,6 @@ static void ConvertTexture(u8* dst, const u8* src, int w, int h, int StoreFormat
 
 int CGraphics_Wii::LoadTextureRawSub(int TextureID, int x, int y, int Width, int Height, int Format, const void *pData)
 {
-	/*
-	int Oglformat = GL_RGBA;
-	if(Format == CImageInfo::FORMAT_RGB)
-		Oglformat = GL_RGB;
-	else if(Format == CImageInfo::FORMAT_ALPHA)
-		Oglformat = GL_ALPHA;
-
-	glBindTexture(GL_TEXTURE_2D, m_aTextures[TextureID].m_Tex);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, Width, Height, Oglformat, GL_UNSIGNED_BYTE, pData);
-	*/
-
-	ReorderPixels(&m_aTextures[TextureID], pData, Width, Height, x, y, Width);
-	GX_InvalidateTexAll();
-
 	return 0;
 }
 
