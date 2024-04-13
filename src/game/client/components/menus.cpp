@@ -1646,8 +1646,8 @@ bool CMenus::OnMouseMove(float x, float y)
 	m_MousePos.y = y;
 #else
 	UI()->ConvertMouseMove(&x, &y);
-	m_MousePos.x += x;
-	m_MousePos.y += y;
+	m_MousePos.x = x;
+	m_MousePos.y = y;
 #endif
 	if(m_MousePos.x < 0) m_MousePos.x = 0;
 	if(m_MousePos.y < 0) m_MousePos.y = 0;

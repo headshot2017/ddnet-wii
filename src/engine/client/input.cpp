@@ -1,5 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+#include <unordered_map>
+
 #include <base/system.h>
 #include <engine/shared/config.h>
 #include <engine/graphics.h>
@@ -14,6 +16,20 @@
 #define KEYS_INCLUDE
 #include "keynames.h"
 #undef KEYS_INCLUDE
+
+#include <wiiuse/wpad.h>
+
+// TODO: nunchuk
+std::unordered_map<int, int> Wiikeys = {
+	{WPAD_BUTTON_LEFT, KEY_a},
+	{WPAD_BUTTON_RIGHT, KEY_d},
+	{WPAD_BUTTON_1, KEY_RETURN},
+	{WPAD_BUTTON_2, KEY_SPACE},
+	{WPAD_BUTTON_A, KEY_MOUSE_1},
+	{WPAD_BUTTON_B, KEY_MOUSE_2},
+	{WPAD_BUTTON_MINUS, KEY_MOUSE_WHEEL_DOWN},
+	{WPAD_BUTTON_PLUS, KEY_ESCAPE},
+};
 
 void CInput::AddEvent(int Unicode, int Key, int Flags)
 {
@@ -46,18 +62,27 @@ CInput::CInput()
 void CInput::Init()
 {
 	m_pGraphics = Kernel()->RequestInterface<IEngineGraphics>();
-	
+
+	WPAD_Init();
+	WPAD_SetDataFormat(0, WPAD_FMT_BTNS_ACC_IR);
 }
 
 void CInput::MouseRelative(float *x, float *y)
 {
-	int nx = 0, ny = 0;
-	float Sens = ((g_Config.m_ClDyncam && g_Config.m_ClDyncamMousesens) ? g_Config.m_ClDyncamMousesens : g_Config.m_InpMousesens) / 100.0f;
+	u32 type;
+	int res = WPAD_Probe(0, &type);
 
-	
+	if (res != WPAD_ERR_NONE)
+	{
+		*x = 0;
+		*y = 0;
+		return;
+	}
 
-	*x = nx*Sens;
-	*y = ny*Sens;
+	WPADData* wd = WPAD_Data(0);
+
+	*x = -10+wd->ir.x*1.1f;
+	*y = -20+wd->ir.y*1.25f;
 }
 
 void CInput::MouseModeAbsolute()
@@ -94,12 +119,6 @@ int CInput::KeyState(int Key)
 
 int CInput::Update()
 {
-	if(m_InputGrabbed && !Graphics()->WindowActive())
-		MouseModeAbsolute();
-
-	/*if(!input_grabbed && Graphics()->WindowActive())
-		Input()->MouseModeRelative();*/
-
 	if(m_InputDispatched)
 	{
 		// clear and begin count on the other one
@@ -107,6 +126,35 @@ int CInput::Update()
 		mem_zero(&m_aInputCount[m_InputCurrent], sizeof(m_aInputCount[m_InputCurrent]));
 		mem_zero(&m_aInputState[m_InputCurrent], sizeof(m_aInputState[m_InputCurrent]));
 		m_InputDispatched = false;
+	}
+
+	{
+		WPAD_ScanPads();
+
+		int down = WPAD_ButtonsDown(0);
+		int Key = -1;
+		int Action = IInput::FLAG_PRESS;
+
+		for(std::unordered_map<int, int>::iterator it = Wiikeys.begin(); it != Wiikeys.end(); ++it)
+		{
+			if (!(down & it->first)) continue;
+			Key = it->second;
+			m_aInputCount[m_InputCurrent][Key].m_Presses++;
+			m_aInputState[m_InputCurrent][Key] = 1;
+			AddEvent(0, Key, Action);
+		}
+
+		int up = WPAD_ButtonsUp(0);
+		Key = -1;
+		Action = IInput::FLAG_RELEASE;
+
+		for(std::unordered_map<int, int>::iterator it = Wiikeys.begin(); it != Wiikeys.end(); ++it)
+		{
+			if (!(up & it->first)) continue;
+			Key = it->second;
+			m_aInputCount[m_InputCurrent][Key].m_Presses++;
+			AddEvent(0, Key, Action);
+		}
 	}
 
 	/*
