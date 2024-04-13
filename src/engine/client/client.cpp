@@ -65,6 +65,7 @@
 
 #include <gccore.h>
 #include <fat.h>
+#include <network.h>
 
 void CGraph::Init(float Min, float Max)
 {
@@ -3170,22 +3171,39 @@ static CClient *CreateClient()
 		Upstream latency
 */
 
+CClient *pClient;
+
+static void powerButton()
+{
+	pClient->Quit();
+}
+
 int main(int argc, const char **argv) // ignore_convention
 {
+	srand(time(0));
+
 	/*if(secure_random_init() != 0)
 	{
 		dbg_msg("secure", "could not initialize secure RNG");
 		return -1;
 	}*/
 
+	char localip[16] = {0};
+	char gateway[16] = {0};
+	char netmask[16] = {0};
+
 	fatInitDefault();
 	net_init();
+	if_config(localip, netmask, gateway, TRUE, 20);
+
 	fs_makedir("sd:/apps");
 	fs_makedir("sd:/apps/ddnet");
 	fs_makedir("sd:/apps/ddnet/data");
 	fs_makedir("sd:/apps/ddnet/data/user");
 
-	CClient *pClient = CreateClient();
+	SYS_SetPowerCallback(powerButton);
+
+	pClient = CreateClient();
 	IKernel *pKernel = IKernel::Create();
 	pKernel->RegisterInterface(pClient);
 	pClient->RegisterInterfaces();
