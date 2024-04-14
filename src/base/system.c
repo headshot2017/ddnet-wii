@@ -76,6 +76,7 @@
 
 	#include <dirent.h>
 	#include <gccore.h>
+	#include <ogc/lwp_watchdog.h>
 
 #else
 	#error NOT IMPLEMENTED
@@ -724,7 +725,7 @@ int64 time_get()
 	if(new_tick != -1)
 		new_tick = 0;
 
-#if defined(CONF_FAMILY_UNIX) || defined(HW_RVL)
+#if defined(CONF_FAMILY_UNIX)
 	struct timeval val;
 	gettimeofday(&val, NULL);
 	last = (int64)val.tv_sec*(int64)1000000+(int64)val.tv_usec;
@@ -738,6 +739,9 @@ int64 time_get()
 		last = t;
 		return t;
 	}
+#elif defined(HW_RVL)
+	last = ticks_to_millisecs(gettime());
+	return last;
 #else
 	#error not implemented
 #endif
@@ -745,8 +749,10 @@ int64 time_get()
 
 int64 time_freq()
 {
-#if defined(CONF_FAMILY_UNIX) || defined(HW_RVL)
+#if defined(CONF_FAMILY_UNIX)
 	return 1000000;
+#elif defined(HW_RVL)
+	return 1000;
 #elif defined(CONF_FAMILY_WINDOWS)
 	int64 t;
 	QueryPerformanceFrequency((PLARGE_INTEGER)&t);
@@ -1485,9 +1491,9 @@ int net_tcp_listen(NETSOCKET sock, int backlog)
 {
 	int err = -1;
 	if(sock.ipv4sock >= 0)
-		err = listen(sock.ipv4sock, backlog);
+		err = net_listen(sock.ipv4sock, backlog);
 	if(sock.ipv6sock >= 0)
-		err = listen(sock.ipv6sock, backlog);
+		err = net_listen(sock.ipv6sock, backlog);
 	return err;
 }
 
@@ -1503,7 +1509,7 @@ int net_tcp_accept(NETSOCKET sock, NETSOCKET *new_sock, NETADDR *a)
 		struct sockaddr_in addr;
 		sockaddr_len = sizeof(addr);
 
-		s = accept(sock.ipv4sock, (struct sockaddr *)&addr, &sockaddr_len);
+		s = net_accept(sock.ipv4sock, (struct sockaddr *)&addr, &sockaddr_len);
 
 		if (s != -1)
 		{
@@ -1541,7 +1547,7 @@ int net_tcp_connect(NETSOCKET sock, const NETADDR *a)
 	{
 		struct sockaddr_in addr;
 		netaddr_to_sockaddr_in(a, &addr);
-		return connect(sock.ipv4sock, (struct sockaddr *)&addr, sizeof(addr));
+		return net_connect(sock.ipv4sock, (struct sockaddr *)&addr, sizeof(addr));
 	}
 
 	/*
@@ -1572,9 +1578,9 @@ int net_tcp_send(NETSOCKET sock, const void *data, int size)
 	int bytes = -1;
 
 	if(sock.ipv4sock >= 0)
-		bytes = send((int)sock.ipv4sock, (const char*)data, size, 0);
+		bytes = net_send((int)sock.ipv4sock, (const char*)data, size, 0);
 	if(sock.ipv6sock >= 0)
-		bytes = send((int)sock.ipv6sock, (const char*)data, size, 0);
+		bytes = net_send((int)sock.ipv6sock, (const char*)data, size, 0);
 
 	return bytes;
 }
@@ -1584,9 +1590,9 @@ int net_tcp_recv(NETSOCKET sock, void *data, int maxsize)
 	int bytes = -1;
 
 	if(sock.ipv4sock >= 0)
-		bytes = recv((int)sock.ipv4sock, (char*)data, maxsize, 0);
+		bytes = net_recv((int)sock.ipv4sock, (char*)data, maxsize, 0);
 	if(sock.ipv6sock >= 0)
-		bytes = recv((int)sock.ipv6sock, (char*)data, maxsize, 0);
+		bytes = net_recv((int)sock.ipv6sock, (char*)data, maxsize, 0);
 
 	return bytes;
 }
