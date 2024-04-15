@@ -23,7 +23,7 @@
 #include "graphics.h"
 
 #define FIFO_SIZE (256 * 1024)
-#define GL_MAX_TEXTURE_SIZE 1024
+#define GL_MAX_TEXTURE_SIZE 512
 
 
 static Mtx44 mtx_identity = {
@@ -399,7 +399,8 @@ int CGraphics_Wii::LoadTextureRaw(int Width, int Height, int Format, const void 
 		if(Width > GL_MAX_TEXTURE_SIZE || Height > GL_MAX_TEXTURE_SIZE)
 		{
 			int NewWidth = min(Width, GL_MAX_TEXTURE_SIZE);
-			int NewHeight = min(Height, GL_MAX_TEXTURE_SIZE);
+			float div = NewWidth/(float)Width;
+			int NewHeight = Height * div;
 			pTmpData = Rescale(Width, Height, NewWidth, NewHeight, Format, pTexData);
 			pTexData = pTmpData;
 			Width = NewWidth;
@@ -448,7 +449,6 @@ int CGraphics_Wii::LoadTextureRaw(int Width, int Height, int Format, const void 
 	}
 
 	m_TextureMemoryUsage += m_aTextures[Tex].m_MemSize;
-	mem_free(pTmpData);
 	return Tex;
 }
 
