@@ -81,7 +81,7 @@ void CInput::MouseRelative(float *x, float *y)
 
 	WPADData* wd = WPAD_Data(0);
 
-	*x = -10+wd->ir.x*1.1f;
+	*x = -20+wd->ir.x*1.25f;
 	*y = -20+wd->ir.y*1.25f;
 }
 
