@@ -131,6 +131,10 @@ int CInput::Update()
 	{
 		WPAD_ScanPads();
 
+		int held = WPAD_ButtonsHeld(0);
+		if (held & WPAD_BUTTON_A) m_aInputState[m_InputCurrent][KEY_MOUSE_1] = 1;
+		if (held & WPAD_BUTTON_B) m_aInputState[m_InputCurrent][KEY_MOUSE_2] = 1;
+
 		int down = WPAD_ButtonsDown(0);
 		int Key = -1;
 		int Action = IInput::FLAG_PRESS;
@@ -154,6 +158,12 @@ int CInput::Update()
 			Key = it->second;
 			m_aInputCount[m_InputCurrent][Key].m_Presses++;
 			AddEvent(0, Key, Action);
+
+			if (Key == KEY_MOUSE_1)
+			{
+				m_ReleaseDelta = time_get() - m_LastRelease;
+				m_LastRelease = time_get();
+			}
 		}
 	}
 
