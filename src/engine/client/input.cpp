@@ -136,8 +136,7 @@ int CInput::Update()
 		if (held & WPAD_BUTTON_B) m_aInputState[m_InputCurrent][KEY_MOUSE_2] = 1;
 
 		int down = WPAD_ButtonsDown(0);
-		int Key = -1;
-		int Action = IInput::FLAG_PRESS;
+		int Key;
 
 		for(std::unordered_map<int, int>::iterator it = Wiikeys.begin(); it != Wiikeys.end(); ++it)
 		{
@@ -145,19 +144,17 @@ int CInput::Update()
 			Key = it->second;
 			m_aInputCount[m_InputCurrent][Key].m_Presses++;
 			m_aInputState[m_InputCurrent][Key] = 1;
-			AddEvent(0, Key, Action);
+			AddEvent(0, Key, IInput::FLAG_PRESS);
 		}
 
 		int up = WPAD_ButtonsUp(0);
-		Key = -1;
-		Action = IInput::FLAG_RELEASE;
 
 		for(std::unordered_map<int, int>::iterator it = Wiikeys.begin(); it != Wiikeys.end(); ++it)
 		{
 			if (!(up & it->first)) continue;
 			Key = it->second;
 			m_aInputCount[m_InputCurrent][Key].m_Presses++;
-			AddEvent(0, Key, Action);
+			AddEvent(0, Key, IInput::FLAG_RELEASE);
 
 			if (Key == KEY_MOUSE_1)
 			{
