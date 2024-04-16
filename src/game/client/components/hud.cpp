@@ -19,6 +19,8 @@
 #include "voting.h"
 #include "binds.h"
 
+#include <wiiuse/wpad.h>
+
 CHud::CHud()
 {
 	// won't work if zero
@@ -449,9 +451,12 @@ void CHud::RenderCursor()
 	if(!m_pClient->m_Snap.m_pLocalCharacter || Client()->State() == IClient::STATE_DEMOPLAYBACK)
 		return;
 
+	WPADData* wd = WPAD_Data(0);
+
 	MapscreenToGroup(m_pClient->m_pCamera->m_Center.x, m_pClient->m_pCamera->m_Center.y, Layers()->GameGroup());
 	Graphics()->TextureSet(g_pData->m_aImages[IMAGE_GAME].m_Id);
 	Graphics()->QuadsBegin();
+	Graphics()->QuadsSetRotation(wd->ir.angle / 180.f * pi);
 
 	// render cursor
 	RenderTools()->SelectSprite(g_pData->m_Weapons.m_aId[m_pClient->m_Snap.m_pLocalCharacter->m_Weapon%NUM_WEAPONS].m_pSpriteCursor);
