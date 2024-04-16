@@ -169,6 +169,9 @@ CGraphics_Wii::CGraphics_Wii()
 	m_ScreenHeight = -1;
 
 	m_Rotation = 0;
+	m_RotX = -1;
+	m_RotY = -1;
+
 	m_Drawing = 0;
 	m_InvalidTexture = 0;
 	m_CurrTexture = -1;
@@ -592,6 +595,7 @@ void CGraphics_Wii::QuadsBegin()
 
 	QuadsSetSubset(0,0,1,1);
 	QuadsSetRotation(0);
+	QuadsSetRotationCenter(-1, -1);
 	SetColor(1,1,1,1);
 }
 
@@ -606,6 +610,13 @@ void CGraphics_Wii::QuadsSetRotation(float Angle)
 {
 	dbg_assert(m_Drawing == DRAWING_QUADS, "called Graphics()->QuadsSetRotation without begin");
 	m_Rotation = Angle;
+}
+
+void CGraphics_Wii::QuadsSetRotationCenter(float X, float Y)
+{
+	dbg_assert(m_Drawing == DRAWING_QUADS, "called Graphics()->QuadsSetRotation without begin");
+	m_RotX = X;
+	m_RotY = Y;
 }
 
 void CGraphics_Wii::SetColorVertex(const CColorVertex *pArray, int Num)
@@ -709,8 +720,8 @@ void CGraphics_Wii::QuadsDrawTL(const CQuadItem *pArray, int Num)
 
 			if(m_Rotation != 0)
 			{
-				Center.x = pArray[i].m_X + pArray[i].m_Width/2;
-				Center.y = pArray[i].m_Y + pArray[i].m_Height/2;
+				Center.x = (m_RotX != -1) ? m_RotX : pArray[i].m_X + pArray[i].m_Width/2;
+				Center.y = (m_RotY != -1) ? m_RotY : pArray[i].m_Y + pArray[i].m_Height/2;
 
 				Rotate(Center, &m_aVertices[m_NumVertices + 6*i], 6);
 			}
@@ -744,8 +755,8 @@ void CGraphics_Wii::QuadsDrawTL(const CQuadItem *pArray, int Num)
 
 			if(m_Rotation != 0)
 			{
-				Center.x = pArray[i].m_X + pArray[i].m_Width/2;
-				Center.y = pArray[i].m_Y + pArray[i].m_Height/2;
+				Center.x = (m_RotX != -1) ? m_RotX : pArray[i].m_X + pArray[i].m_Width/2;
+				Center.y = (m_RotY != -1) ? m_RotY : pArray[i].m_Y + pArray[i].m_Height/2;
 
 				Rotate(Center, &m_aVertices[m_NumVertices + 4*i], 4);
 			}

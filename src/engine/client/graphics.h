@@ -39,6 +39,8 @@ protected:
 	bool m_RenderEnable;
 
 	float m_Rotation;
+	float m_RotX;
+	float m_RotY;
 	int m_Drawing;
 	bool m_DoScreenshot;
 	char m_aScreenshotName[128];
@@ -115,6 +117,7 @@ public:
 	virtual void QuadsBegin();
 	virtual void QuadsEnd();
 	virtual void QuadsSetRotation(float Angle);
+	virtual void QuadsSetRotationCenter(float X, float Y);
 
 	virtual void SetColorVertex(const CColorVertex *pArray, int Num);
 	virtual void SetColor(float r, float g, float b, float a);

@@ -38,6 +38,8 @@
 #include "skins.h"
 #include "controls.h"
 
+#include <wiiuse/wpad.h>
+
 vec4 CMenus::ms_GuiColor;
 vec4 CMenus::ms_ColorTabbarInactiveOutgame;
 vec4 CMenus::ms_ColorTabbarActiveOutgame;
@@ -1824,9 +1826,13 @@ void CMenus::OnRender()
 		Render();
 
 	// render cursor
+	WPADData* wd = WPAD_Data(0);
+
 	Graphics()->TextureSet(g_pData->m_aImages[IMAGE_CURSOR].m_Id);
 	Graphics()->QuadsBegin();
 	Graphics()->SetColor(1,1,1,1);
+	Graphics()->QuadsSetRotation((wd->ir.angle+45) / 180.f * pi);
+	Graphics()->QuadsSetRotationCenter(mx, my);
 	IGraphics::CQuadItem QuadItem(mx, my, 24, 24);
 	Graphics()->QuadsDrawTL(&QuadItem, 1);
 	Graphics()->QuadsEnd();
