@@ -740,7 +740,7 @@ int64 time_get()
 		return t;
 	}
 #elif defined(HW_RVL)
-	last = ticks_to_millisecs(gettime());
+	last = ticks_to_microsecs(gettime());
 	return last;
 #else
 	#error not implemented
@@ -749,10 +749,8 @@ int64 time_get()
 
 int64 time_freq()
 {
-#if defined(CONF_FAMILY_UNIX)
+#if defined(CONF_FAMILY_UNIX) || defined(HW_RVL)
 	return 1000000;
-#elif defined(HW_RVL)
-	return 1000;
 #elif defined(CONF_FAMILY_WINDOWS)
 	int64 t;
 	QueryPerformanceFrequency((PLARGE_INTEGER)&t);
