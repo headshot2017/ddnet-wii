@@ -64,9 +64,9 @@ void CUI::ConvertMouseMove(float *x, float *y)
 	//*x = *x * 500 / g_Config.m_GfxScreenWidth;
 	//*y = *y * 500 / g_Config.m_GfxScreenHeight;
 #else
-	float Fac = (float)(g_Config.m_UiMousesens)/g_Config.m_InpMousesens;
-	*x = *x*Fac;
-	*y = *y*Fac;
+	//float Fac = (float)(g_Config.m_UiMousesens)/g_Config.m_InpMousesens;
+	//*x = *x*Fac;
+	//*y = *y*Fac;
 #endif
 }
 

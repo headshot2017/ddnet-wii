@@ -356,7 +356,9 @@ bool CControls::OnMouseMove(float x, float y)
 		ClampMousePos();
 	}
 #else
-	m_MousePos[g_Config.m_ClDummy] += vec2(x, y); // TODO: ugly
+	m_OldMouseX = -320+x*2.f;
+	m_OldMouseY = -240+y*2.f;
+	m_MousePos[g_Config.m_ClDummy] = vec2((m_OldMouseX - g_Config.m_GfxScreenWidth/2), (m_OldMouseY - g_Config.m_GfxScreenHeight/2));
 	ClampMousePos();
 #endif
 
