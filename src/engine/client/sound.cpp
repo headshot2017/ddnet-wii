@@ -15,11 +15,14 @@ extern "C" { // wavpack
 	//#include <opusfile.h>
 }
 #include <math.h>
+#include <malloc.h>
+
+#include <asndlib.h>
 
 enum
 {
 	NUM_SAMPLES = 512,
-	NUM_VOICES = 256,
+	NUM_VOICES = 16,
 	NUM_CHANNELS = 16,
 };
 
@@ -294,10 +297,14 @@ int CSound::Init()
 	m_MixingRate = g_Config.m_SndRate;
 
 	//m_MaxFrames = FormatOut.samples*2;
-	m_pMixBuffer = (int *)mem_alloc(m_MaxFrames*2*sizeof(int), 1);
+	//m_pMixBuffer = (int *)mem_alloc(m_MaxFrames*2*sizeof(int), 1);
 
 	m_SoundEnabled = 1;
 	Update(); // update the volume
+
+	ASND_Init();
+	ASND_Pause(0);
+
 	return 0;
 }
 
@@ -322,11 +329,15 @@ int CSound::Update()
 int CSound::Shutdown()
 {
 	lock_destroy(m_SoundLock);
-	if(m_pMixBuffer)
+	/*if(m_pMixBuffer)
 	{
 		mem_free(m_pMixBuffer);
 		m_pMixBuffer = 0;
-	}
+	}*/
+
+	ASND_Pause(1);
+	ASND_End();
+
 	return 0;
 }
 
@@ -354,7 +365,10 @@ void CSound::RateConvert(int SampleID)
 
 	// allocate new data
 	NumFrames = (int)((pSample->m_NumFrames/(float)pSample->m_Rate)*m_MixingRate);
-	pNewData = (short *)mem_alloc(NumFrames*pSample->m_Channels*sizeof(short), 1);
+	int size = NumFrames*pSample->m_Channels*sizeof(short);
+	size = (size + 0x1F) & ~0x1F; // round up to nearest multiple of 0x20
+
+	pNewData = (short *)memalign(0x20, size);
 
 	for(int i = 0; i < NumFrames; i++)
 	{
@@ -480,7 +494,9 @@ int CSound::DecodeWV(int SampleID, const void *pData, unsigned DataSize)
 		WavpackUnpackSamples(pContext, pBuffer, NumSamples); // TODO: check return value
 		pSrc = pBuffer;
 
-		pSample->m_pData = (short *)mem_alloc(2*NumSamples*NumChannels, 1);
+		int size = 2*NumSamples*NumChannels;
+		size = (size + 0x1F) & ~0x1F; // round up to nearest multiple of 0x20
+		pSample->m_pData = (short *)memalign(0x20, size);
 		pDst = pSample->m_pData;
 
 		for (i = 0; i < NumSamples*NumChannels; i++)
@@ -812,6 +828,7 @@ ISound::CVoiceHandle CSound::Play(int ChannelID, int SampleID, int Flags, float 
 	}
 
 	// voice found, use it
+	/*
 	if(VoiceID != -1)
 	{
 		m_aVoices[VoiceID].m_pSample = &m_aSamples[SampleID];
@@ -828,6 +845,76 @@ ISound::CVoiceHandle CSound::Play(int ChannelID, int SampleID, int Flags, float 
 		m_aVoices[VoiceID].m_Shape = ISound::SHAPE_CIRCLE;
 		m_aVoices[VoiceID].m_Circle.m_Radius = DefaultDistance;
 		Age = m_aVoices[VoiceID].m_Age;
+	}*/
+
+	CChannel* pChannel = &m_aChannels[ChannelID];
+	CSample* pSample = &m_aSamples[SampleID];
+
+	int Rvol = (int)(pChannel->m_Vol*(255/255.0f));
+	int Lvol = (int)(pChannel->m_Vol*(255/255.0f));
+
+	// volume calculation
+	if(Flags&ISound::FLAG_POS && pChannel->m_Pan)
+	{
+		// TODO: we should respect the channel panning value
+		int dx = x - m_CenterX;
+		int dy = y - m_CenterY;
+		//
+		int p = IntAbs(dx);
+		float FalloffX = 0.0f;
+		float FalloffY = 0.0f;
+
+		int RangeX = 0; // for panning
+		bool InVoiceField = false;
+
+		// circle
+		{
+			float r = DefaultDistance;
+			RangeX = r;
+
+			int Dist = (int)sqrtf((float)dx*dx+dy*dy); // nasty float
+			if(Dist < r)
+			{
+				InVoiceField = true;
+
+				// falloff
+				int FalloffDistance = 0.0f; // r*v->m_Falloff
+				if(Dist > FalloffDistance)
+					FalloffX = FalloffY = (r-Dist)/(r-FalloffDistance);
+				else
+					FalloffX = FalloffY = 1.0f;
+			}
+			else
+				InVoiceField = false;
+		}
+
+		if(InVoiceField)
+		{
+			// panning
+			if(!(Flags&ISound::FLAG_NO_PANNING))
+			{
+				if(dx > 0)
+					Lvol = ((RangeX-p)*Lvol)/RangeX;
+				else
+					Rvol = ((RangeX-p)*Rvol)/RangeX;
+			}
+
+			{
+				Lvol *= FalloffX;
+				Rvol *= FalloffY;
+			}
+		}
+		else
+		{
+			Lvol = 0;
+			Rvol = 0;
+		}
+	}
+
+	if (Lvol || Rvol)
+	{
+		int format = (pSample->m_Channels == 2) ? VOICE_STEREO_16BIT : VOICE_MONO_16BIT;
+		ASND_SetVoice(VoiceID, format, pSample->m_Rate, 0, pSample->m_pData, pSample->m_NumFrames*pSample->m_Channels*2, Lvol, Rvol, NULL);
 	}
 
 	lock_unlock(m_SoundLock);
