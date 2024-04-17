@@ -21,3 +21,14 @@ jobs:
       - name: Compile Wii build
         run: |
           make
+
+      - name: Move into folder
+        run: |
+          mkdir -p apps/ddnet
+          cp -r boot.dol meta.xml icon.png data apps/ddnet/
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: Wii .dol app
+          path: ./apps
