@@ -44,7 +44,7 @@ public:
 			m_aCurrentdir[0] = 0;
 
 		// load paths from storage.cfg
-		LoadPaths(ppArguments[0]);
+		//LoadPaths(ppArguments[0]);
 
 		if(!m_NumPaths)
 		{

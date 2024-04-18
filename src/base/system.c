@@ -896,6 +896,12 @@ int net_host_lookup(const char *hostname, NETADDR *addr, int types)
 	dbg_msg("host lookup", "host='%s' port=%d %d", host, port, types);
 
 	struct hostent* hp = net_gethostbyname(host);
+	if (!hp || !hp->h_addr_list)
+	{
+		dbg_msg("host lookup", "lookup failed");
+		return -1;
+	}
+
 	struct in_addr** p1 = (struct in_addr **)hp->h_addr_list;
 	char ip_address[NETADDR_MAXSTRSIZE];
 
