@@ -9,6 +9,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Generate
+        run: |
+          mkdir -p build/game/generated
+          python datasrc/compile.py network_source > build/game/generated/protocol.cpp
+          python datasrc/compile.py network_header > build/game/generated/protocol.h
+          python datasrc/compile.py client_content_source > build/game/generated/client_data.cpp
+          python datasrc/compile.py client_content_header > build/game/generated/client_data.h
+          python scripts/cmd5.py src/engine/shared/protocol.h build/game/generated/protocol.h src/game/tuning.h src/game/gamecore.cpp build/game/generated/protocol.h > build/game/generated/nethash.cpp
+
       - name: Compile Wii build
         run: |
           make
+
+      - name: Move into folder
+        run: |
+          mkdir -p apps/ddnet
+          cp -r boot.dol meta.xml icon.png data apps/ddnet/
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: Wii .dol app
+          path: ./apps
