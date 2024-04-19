@@ -65,7 +65,7 @@
 
 #include <gccore.h>
 #include <fat.h>
-#include <network.h>
+#include <wiisocket.h>
 
 void CGraph::Init(float Min, float Max)
 {
@@ -3187,13 +3187,7 @@ int main(int argc, const char **argv) // ignore_convention
 		return -1;
 	}*/
 
-	char localip[16] = {0};
-	char gateway[16] = {0};
-	char netmask[16] = {0};
-
 	fatInitDefault();
-	net_init();
-	if_config(localip, netmask, gateway, TRUE, 20);
 
 	fs_makedir("sd:/apps");
 	fs_makedir("sd:/apps/ddnet");
@@ -3310,6 +3304,28 @@ int main(int argc, const char **argv) // ignore_convention
 	if(!g_Config.m_ClShowConsole)
 		FreeConsole();
 #endif
+
+	// try a few times to initialize libwiisocket (?)
+	int socket_init_success = -1;
+	for (int attempts = 0;attempts < 3;attempts++) {
+		socket_init_success = wiisocket_init();
+		dbg_msg("wiisocket", "attempt: %d/3 wiisocket_init: %d", attempts+1, socket_init_success);
+		if (socket_init_success == 0)
+			break;
+	}
+	if (socket_init_success != 0)
+		return -1;
+
+	// try a few times to get an ip (?)
+	u32 ip = 0;
+	for (int attempts = 0; attempts < 3; attempts++) {
+		ip = gethostid();
+		dbg_msg("wiisocket", "attempt: %d/3 gethostid: %x", attempts+1, ip);
+		if (ip)
+			break;
+	}
+	if (!ip)
+		return -1;
 
 	// run the client
 	dbg_msg("client", "starting...");

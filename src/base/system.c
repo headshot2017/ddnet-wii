@@ -66,13 +66,14 @@
 	#include <unistd.h>
 
 	/* unix net includes */
-	#include <network.h>
-	//#include <sys/ioctl.h>
+	#include <sys/socket.h>
+	#include <sys/ioctl.h>
 	#include <errno.h>
-	//#include <netdb.h>
-	//#include <netinet/in.h>
+	#include <netdb.h>
+	#include <netinet/in.h>
 	#include <fcntl.h>
-	//#include <arpa/inet.h>
+	#include <pthread.h>
+	#include <arpa/inet.h>
 
 	#include <dirent.h>
 	#include <gccore.h>
@@ -895,7 +896,7 @@ int net_host_lookup(const char *hostname, NETADDR *addr, int types)
 
 	dbg_msg("host lookup", "host='%s' port=%d %d", host, port, types);
 
-	struct hostent* hp = net_gethostbyname(host);
+	struct hostent* hp = gethostbyname(host);
 	if (!hp || !hp->h_addr_list)
 	{
 		dbg_msg("host lookup", "lookup failed");
@@ -1085,7 +1086,7 @@ static int priv_net_create_socket(int domain, int type, struct sockaddr *addr, i
 	int sock, e;
 
 	/* create socket */
-	sock = net_socket(domain, type, 0);
+	sock = socket(domain, type, 0);
 	if(sock < 0)
 	{
 #if defined(CONF_FAMILY_WINDOWS)
@@ -1120,7 +1121,7 @@ static int priv_net_create_socket(int domain, int type, struct sockaddr *addr, i
 #endif
 
 	/* bind the socket */
-	e = net_bind(sock, addr, sockaddrlen);
+	e = bind(sock, addr, sockaddrlen);
 	if(e != 0)
 	{
 #if defined(CONF_FAMILY_WINDOWS)
@@ -1162,16 +1163,16 @@ NETSOCKET net_udp_create(NETADDR bindaddr)
 			sock.ipv4sock = socket;
 
 			/* set boardcast */
-			net_setsockopt(socket, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof(broadcast));
+			setsockopt(socket, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof(broadcast));
 
 			/* set receive buffer size */
-			net_setsockopt(socket, SOL_SOCKET, SO_RCVBUF, (char*)&recvsize, sizeof(recvsize));
+			setsockopt(socket, SOL_SOCKET, SO_RCVBUF, (char*)&recvsize, sizeof(recvsize));
 
 			{
 				/* set DSCP/TOS */
 				int iptos = 0x10 /* IPTOS_LOWDELAY */;
 				//int iptos = 46; /* High Priority */
-				net_setsockopt(socket, IPPROTO_IP, IP_TOS, (char*)&iptos, sizeof(iptos));
+				setsockopt(socket, IPPROTO_IP, IP_TOS, (char*)&iptos, sizeof(iptos));
 			}
 		}
 	}
@@ -1261,7 +1262,7 @@ int net_udp_send(NETSOCKET sock, const NETADDR *addr, const void *data, int size
 			else
 				netaddr_to_sockaddr_in(addr, &sa);
 
-			d = net_sendto((int)sock.ipv4sock, (const char*)data, size, 0, (struct sockaddr *)&sa, sizeof(sa));
+			d = sendto((int)sock.ipv4sock, (const char*)data, size, 0, (struct sockaddr *)&sa, sizeof(sa));
 		}
 		else
 			dbg_msg("net", "can't send ipv4 traffic to this socket");
@@ -1336,7 +1337,7 @@ int net_udp_recv(NETSOCKET sock, NETADDR *addr, void *data, int maxsize)
 	if(bytes == 0 && sock.ipv4sock >= 0)
 	{
 		fromlen = sizeof(struct sockaddr_in);
-		bytes = net_recvfrom(sock.ipv4sock, (char*)data, maxsize, 0, (struct sockaddr *)&sockaddrbuf, &fromlen);
+		bytes = recvfrom(sock.ipv4sock, (char*)data, maxsize, 0, (struct sockaddr *)&sockaddrbuf, &fromlen);
 	}
 
 	/*
@@ -1451,7 +1452,7 @@ int net_set_non_blocking(NETSOCKET sock)
 #if defined(CONF_FAMILY_WINDOWS)
 		ioctlsocket(sock.ipv4sock, FIONBIO, (unsigned long *)&mode);
 #else
-		net_ioctl(sock.ipv4sock, FIONBIO, (unsigned long *)&mode);
+		ioctl(sock.ipv4sock, FIONBIO, (unsigned long *)&mode);
 #endif
 	}
 
@@ -1460,7 +1461,7 @@ int net_set_non_blocking(NETSOCKET sock)
 #if defined(CONF_FAMILY_WINDOWS)
 		ioctlsocket(sock.ipv6sock, FIONBIO, (unsigned long *)&mode);
 #else
-		net_ioctl(sock.ipv6sock, FIONBIO, (unsigned long *)&mode);
+		ioctl(sock.ipv6sock, FIONBIO, (unsigned long *)&mode);
 #endif
 	}
 
@@ -1475,7 +1476,7 @@ int net_set_blocking(NETSOCKET sock)
 #if defined(CONF_FAMILY_WINDOWS)
 		ioctlsocket(sock.ipv4sock, FIONBIO, (unsigned long *)&mode);
 #else
-		net_ioctl(sock.ipv4sock, FIONBIO, (unsigned long *)&mode);
+		ioctl(sock.ipv4sock, FIONBIO, (unsigned long *)&mode);
 #endif
 	}
 
@@ -1484,7 +1485,7 @@ int net_set_blocking(NETSOCKET sock)
 #if defined(CONF_FAMILY_WINDOWS)
 		ioctlsocket(sock.ipv6sock, FIONBIO, (unsigned long *)&mode);
 #else
-		net_ioctl(sock.ipv6sock, FIONBIO, (unsigned long *)&mode);
+		ioctl(sock.ipv6sock, FIONBIO, (unsigned long *)&mode);
 #endif
 	}
 
@@ -1495,9 +1496,9 @@ int net_tcp_listen(NETSOCKET sock, int backlog)
 {
 	int err = -1;
 	if(sock.ipv4sock >= 0)
-		err = net_listen(sock.ipv4sock, backlog);
+		err = listen(sock.ipv4sock, backlog);
 	if(sock.ipv6sock >= 0)
-		err = net_listen(sock.ipv6sock, backlog);
+		err = listen(sock.ipv6sock, backlog);
 	return err;
 }
 
@@ -1513,7 +1514,7 @@ int net_tcp_accept(NETSOCKET sock, NETSOCKET *new_sock, NETADDR *a)
 		struct sockaddr_in addr;
 		sockaddr_len = sizeof(addr);
 
-		s = net_accept(sock.ipv4sock, (struct sockaddr *)&addr, &sockaddr_len);
+		s = accept(sock.ipv4sock, (struct sockaddr *)&addr, &sockaddr_len);
 
 		if (s != -1)
 		{
@@ -1551,7 +1552,7 @@ int net_tcp_connect(NETSOCKET sock, const NETADDR *a)
 	{
 		struct sockaddr_in addr;
 		netaddr_to_sockaddr_in(a, &addr);
-		return net_connect(sock.ipv4sock, (struct sockaddr *)&addr, sizeof(addr));
+		return connect(sock.ipv4sock, (struct sockaddr *)&addr, sizeof(addr));
 	}
 
 	/*
@@ -1582,9 +1583,9 @@ int net_tcp_send(NETSOCKET sock, const void *data, int size)
 	int bytes = -1;
 
 	if(sock.ipv4sock >= 0)
-		bytes = net_send((int)sock.ipv4sock, (const char*)data, size, 0);
+		bytes = send((int)sock.ipv4sock, (const char*)data, size, 0);
 	if(sock.ipv6sock >= 0)
-		bytes = net_send((int)sock.ipv6sock, (const char*)data, size, 0);
+		bytes = send((int)sock.ipv6sock, (const char*)data, size, 0);
 
 	return bytes;
 }
@@ -1594,9 +1595,9 @@ int net_tcp_recv(NETSOCKET sock, void *data, int maxsize)
 	int bytes = -1;
 
 	if(sock.ipv4sock >= 0)
-		bytes = net_recv((int)sock.ipv4sock, (char*)data, maxsize, 0);
+		bytes = recv((int)sock.ipv4sock, (char*)data, maxsize, 0);
 	if(sock.ipv6sock >= 0)
-		bytes = net_recv((int)sock.ipv6sock, (char*)data, maxsize, 0);
+		bytes = recv((int)sock.ipv6sock, (char*)data, maxsize, 0);
 
 	return bytes;
 }
@@ -1919,9 +1920,9 @@ int net_socket_read_wait(NETSOCKET sock, int time)
 
 	/* don't care about writefds and exceptfds */
 	if(time < 0)
-		net_select(sockid+1, &readfds, NULL, NULL, NULL);
+		select(sockid+1, &readfds, NULL, NULL, NULL);
 	else
-		net_select(sockid+1, &readfds, NULL, NULL, &tv);
+		select(sockid+1, &readfds, NULL, NULL, &tv);
 
 	if(sock.ipv4sock >= 0 && FD_ISSET(sock.ipv4sock, &readfds))
 		return 1;
