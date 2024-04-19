@@ -160,6 +160,7 @@ void CBackground::OnRender()
 					Graphics()->TextureSet(m_pImages->Get(pTMap->m_Image));
 
 				CTile *pTiles = (CTile *)m_pMap->GetData(pTMap->m_Data);
+				if (!pTiles) {Client()->DisconnectWithReason("out of memory (could not get tiles)"); return;}
 				unsigned int Size = m_pMap->GetUncompressedDataSize(pTMap->m_Data);
 
 				if (Size >= pTMap->m_Width*pTMap->m_Height*sizeof(CTile))
@@ -182,6 +183,7 @@ void CBackground::OnRender()
 					Graphics()->TextureSet(m_pImages->Get(pQLayer->m_Image));
 
 				CQuad *pQuads = (CQuad *)m_pMap->GetDataSwapped(pQLayer->m_Data);
+				if (!pQuads) {Client()->DisconnectWithReason("out of memory (could not get quads)"); return;}
 
 				Graphics()->BlendNone();
 				RenderTools()->ForceRenderQuads(pQuads, pQLayer->m_NumQuads, LAYERRENDERFLAG_OPAQUE, m_pLayers->EnvelopeEval, m_pLayers);

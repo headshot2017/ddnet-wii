@@ -91,6 +91,7 @@ public:
 
 	// actions
 	virtual void Connect(const char *pAddress) = 0;
+	virtual void DisconnectWithReason(const char *pReason) = 0;
 	virtual void Disconnect() = 0;
 
 	// dummy

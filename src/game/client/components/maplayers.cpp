@@ -214,6 +214,7 @@ void CMapLayers::OnRender()
 			{
 				CMapItemLayerTilemap *pTMap = (CMapItemLayerTilemap *)pLayer;
 				CTile *pTiles = (CTile *)m_pLayers->Map()->GetData(pTMap->m_Data);
+				if (!pTiles) {Client()->DisconnectWithReason("out of memory"); return;}
 				CServerInfo CurrentServerInfo;
 				Client()->GetServerInfo(&CurrentServerInfo);
 				char aFilename[256];
@@ -247,6 +248,7 @@ void CMapLayers::OnRender()
 						Graphics()->TextureSet(m_pClient->m_pMapimages->Get(pTMap->m_Image));
 
 					CTile *pTiles = (CTile *)m_pLayers->Map()->GetData(pTMap->m_Data);
+					if (!pTiles) {Client()->DisconnectWithReason("out of memory (could not get tiles)"); return;}
 					unsigned int Size = m_pLayers->Map()->GetUncompressedDataSize(pTMap->m_Data);
 
 					if (Size >= pTMap->m_Width*pTMap->m_Height*sizeof(CTile))
@@ -273,6 +275,7 @@ void CMapLayers::OnRender()
 						Graphics()->TextureSet(m_pClient->m_pMapimages->Get(pQLayer->m_Image));
 
 					CQuad *pQuads = (CQuad *)m_pLayers->Map()->GetDataSwapped(pQLayer->m_Data);
+					if (!pQuads) {Client()->DisconnectWithReason("out of memory (could not get quads)"); return;}
 
 					Graphics()->BlendNone();
 					RenderTools()->RenderQuads(pQuads, pQLayer->m_NumQuads, LAYERRENDERFLAG_OPAQUE, EnvelopeEval, this);
@@ -286,6 +289,7 @@ void CMapLayers::OnRender()
 				Graphics()->TextureSet(m_pClient->m_pMapimages->GetEntities());
 
 				CTile *pFrontTiles = (CTile *)m_pLayers->Map()->GetData(pTMap->m_Front);
+				if (!pFrontTiles) {Client()->DisconnectWithReason("out of memory (could not get front tiles)"); return;}
 				unsigned int Size = m_pLayers->Map()->GetUncompressedDataSize(pTMap->m_Front);
 
 				if (Size >= pTMap->m_Width*pTMap->m_Height*sizeof(CTile))
@@ -305,6 +309,7 @@ void CMapLayers::OnRender()
 				Graphics()->TextureSet(m_pClient->m_pMapimages->GetEntities());
 
 				CSwitchTile *pSwitchTiles = (CSwitchTile *)m_pLayers->Map()->GetData(pTMap->m_Switch);
+				if (!pSwitchTiles) {Client()->DisconnectWithReason("out of memory (could not get switch tiles)"); return;}
 				unsigned int Size = m_pLayers->Map()->GetUncompressedDataSize(pTMap->m_Switch);
 
 				if (Size >= pTMap->m_Width*pTMap->m_Height*sizeof(CSwitchTile))
@@ -323,6 +328,7 @@ void CMapLayers::OnRender()
 				Graphics()->TextureSet(m_pClient->m_pMapimages->GetEntities());
 
 				CTeleTile *pTeleTiles = (CTeleTile *)m_pLayers->Map()->GetData(pTMap->m_Tele);
+				if (!pTeleTiles) {Client()->DisconnectWithReason("out of memory (could not get tele tiles)"); return;}
 				unsigned int Size = m_pLayers->Map()->GetUncompressedDataSize(pTMap->m_Tele);
 
 				if (Size >= pTMap->m_Width*pTMap->m_Height*sizeof(CTeleTile))
@@ -341,6 +347,7 @@ void CMapLayers::OnRender()
 				Graphics()->TextureSet(m_pClient->m_pMapimages->GetEntities());
 
 				CSpeedupTile *pSpeedupTiles = (CSpeedupTile *)m_pLayers->Map()->GetData(pTMap->m_Speedup);
+				if (!pSpeedupTiles) {Client()->DisconnectWithReason("out of memory (could not get speedup tiles)"); return;}
 				unsigned int Size = m_pLayers->Map()->GetUncompressedDataSize(pTMap->m_Speedup);
 
 				if (Size >= pTMap->m_Width*pTMap->m_Height*sizeof(CSpeedupTile))
@@ -359,6 +366,7 @@ void CMapLayers::OnRender()
 				Graphics()->TextureSet(m_pClient->m_pMapimages->GetEntities());
 
 				CTuneTile *pTuneTiles = (CTuneTile *)m_pLayers->Map()->GetData(pTMap->m_Tune);
+				if (!pTuneTiles) {Client()->DisconnectWithReason("out of memory (could not get tune tiles)"); return;}
 				unsigned int Size = m_pLayers->Map()->GetUncompressedDataSize(pTMap->m_Tune);
 
 				if (Size >= pTMap->m_Width*pTMap->m_Height*sizeof(CTuneTile))
