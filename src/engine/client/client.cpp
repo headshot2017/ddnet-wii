@@ -2099,7 +2099,6 @@ void CClient::FinishMapDownload()
 	const char *pError;
 	m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client/network", "download complete, loading map");
 
-	int prev = m_MapdownloadTotalsize;
 	m_MapdownloadTotalsize = -1;
 
 	// load map
@@ -2586,7 +2585,7 @@ void CClient::Run()
 	while (1)
 	{
 		//
-		VersionUpdate();
+		//VersionUpdate();
 
 		// handle pending connects
 		if(m_aCmdConnect[0])
