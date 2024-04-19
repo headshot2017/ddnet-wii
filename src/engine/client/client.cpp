@@ -59,6 +59,7 @@
 
 #include "friends.h"
 #include "serverbrowser.h"
+#include "fetcher.h"
 #include "client.h"
 
 #include <zlib.h>
@@ -306,6 +307,7 @@ CClient::CClient() : m_DemoPlayer(&m_SnapshotDelta)
 	// map download
 	m_aMapdownloadFilename[0] = 0;
 	m_aMapdownloadName[0] = 0;
+	m_pMapdownloadTask = 0;
 	m_MapdownloadFile = 0;
 	m_MapdownloadChunk = 0;
 	m_MapdownloadCrc = 0;
@@ -723,6 +725,8 @@ void CClient::DisconnectWithReason(const char *pReason)
 
 	// disable all downloads
 	m_MapdownloadChunk = 0;
+	if(m_pMapdownloadTask)
+		m_pMapdownloadTask->Abort();
 	if(m_MapdownloadFile)
 		io_close(m_MapdownloadFile);
 	m_MapdownloadFile = 0;
@@ -1531,7 +1535,20 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 					m_MapdownloadAmount = 0;
 
 					ResetMapDownload();
-					SendMapRequest();
+
+					if(g_Config.m_ClHttpMapDownload)
+					{
+						char aUrl[256];
+						char aFilename[64];
+						char aEscaped[128];
+						str_format(aFilename, sizeof(aFilename), "%s_%08x.map", pMap, MapCrc);
+						Fetcher()->Escape(aEscaped, sizeof(aEscaped), aFilename);
+						str_format(aUrl, sizeof(aUrl), "http://%s/%s", g_Config.m_ClDDNetMapServer, aEscaped);
+						m_pMapdownloadTask = new CFetchTask(true);
+						Fetcher()->QueueAdd(m_pMapdownloadTask, aUrl, m_aMapdownloadFilename, IStorage::TYPE_SAVE);
+					}
+					else
+						SendMapRequest();
 				}
 			}
 		}
@@ -2090,6 +2107,10 @@ void CClient::ProcessServerPacketDummy(CNetChunk *pPacket)
 
 void CClient::ResetMapDownload()
 {
+	if(m_pMapdownloadTask){
+		delete m_pMapdownloadTask;
+		m_pMapdownloadTask = NULL;
+	}
 	m_MapdownloadFile = 0;
 	m_MapdownloadAmount = 0;
 }
@@ -2099,6 +2120,7 @@ void CClient::FinishMapDownload()
 	const char *pError;
 	m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client/network", "download complete, loading map");
 
+	int prev = m_MapdownloadTotalsize;
 	m_MapdownloadTotalsize = -1;
 
 	// load map
@@ -2108,6 +2130,12 @@ void CClient::FinishMapDownload()
 		ResetMapDownload();
 		m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client/network", "loading done");
 		SendReady();
+	}
+	else if(m_pMapdownloadTask)
+	{
+		ResetMapDownload();
+		m_MapdownloadTotalsize = prev;
+		SendMapRequest();
 	}
 	else{
 		if(m_MapdownloadFile)
@@ -2407,6 +2435,22 @@ void CClient::Update()
 
 	// pump the network
 	PumpNetwork();
+	if(m_pMapdownloadTask)
+	{
+		if(m_pMapdownloadTask->State() == CFetchTask::STATE_DONE)
+			FinishMapDownload();
+		else if(m_pMapdownloadTask->State() == CFetchTask::STATE_ERROR)
+		{
+			dbg_msg("webdl", "HTTP failed falling back to gameserver.");
+			ResetMapDownload();
+			SendMapRequest();
+		}
+		else if(m_pMapdownloadTask->State() == CFetchTask::STATE_ABORTED)
+		{
+			delete m_pMapdownloadTask;
+			m_pMapdownloadTask = 0;
+		}
+	}
 
 
 	// update the maser server registry
@@ -2456,6 +2500,7 @@ void CClient::RegisterInterfaces()
 	Kernel()->RegisterInterface(static_cast<IDemoRecorder*>(&m_DemoRecorder[RECORDER_MANUAL]));
 	Kernel()->RegisterInterface(static_cast<IDemoPlayer*>(&m_DemoPlayer));
 	Kernel()->RegisterInterface(static_cast<IServerBrowser*>(&m_ServerBrowser));
+	Kernel()->RegisterInterface(static_cast<IFetcher*>(&m_Fetcher));
 	Kernel()->RegisterInterface(static_cast<IFriends*>(&m_Friends));
 	Kernel()->ReregisterInterface(static_cast<IFriends*>(&m_Foes));
 }
@@ -2471,11 +2516,14 @@ void CClient::InitInterfaces()
 	m_pInput = Kernel()->RequestInterface<IEngineInput>();
 	m_pMap = Kernel()->RequestInterface<IEngineMap>();
 	m_pMasterServer = Kernel()->RequestInterface<IEngineMasterServer>();
+	m_pFetcher = Kernel()->RequestInterface<IFetcher>();
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
 
 	m_DemoEditor.Init(m_pGameClient->NetVersion(), &m_SnapshotDelta, m_pConsole, m_pStorage);
 
 	m_ServerBrowser.SetBaseInfo(&m_NetClient[2], m_pGameClient->NetVersion());
+
+	m_Fetcher.Init();
 
 	m_Friends.Init();
 	m_Foes.Init(true);

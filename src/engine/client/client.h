@@ -61,6 +61,7 @@ class CClient : public IClient, public CDemoPlayer::IListner
 	IEngineMap *m_pMap;
 	IConsole *m_pConsole;
 	IStorage *m_pStorage;
+	IFetcher *m_pFetcher;
 	IEngineMasterServer *m_pMasterServer;
 
 	enum
@@ -74,6 +75,7 @@ class CClient : public IClient, public CDemoPlayer::IListner
 	class CDemoRecorder m_DemoRecorder[RECORDER_MAX];
 	class CDemoEditor m_DemoEditor;
 	class CServerBrowser m_ServerBrowser;
+	class CFetcher m_Fetcher;
 	class CFriends m_Friends;
 	class CFriends m_Foes;
 	class CMapChecker m_MapChecker;
@@ -121,6 +123,7 @@ class CClient : public IClient, public CDemoPlayer::IListner
 	char m_aCmdConnect[256];
 
 	// map download
+	CFetchTask *m_pMapdownloadTask;
 	char m_aMapdownloadFilename[256];
 	char m_aMapdownloadName[256];
 	IOHANDLE m_MapdownloadFile;
@@ -198,6 +201,7 @@ public:
 	IGameClient *GameClient() { return m_pGameClient; }
 	IEngineMasterServer *MasterServer() { return m_pMasterServer; }
 	IStorage *Storage() { return m_pStorage; }
+	IFetcher *Fetcher() { return m_pFetcher; }
 
 	CClient();
 
@@ -286,9 +290,10 @@ public:
 	void ResetMapDownload();
 	void FinishMapDownload();
 
+	virtual CFetchTask *MapDownloadTask() { return m_pMapdownloadTask; }
 	virtual const char *MapDownloadName() { return m_aMapdownloadName; }
-	virtual int MapDownloadAmount() { return m_MapdownloadAmount; }
-	virtual int MapDownloadTotalsize() { return m_MapdownloadTotalsize; }
+	virtual int MapDownloadAmount() { return !m_pMapdownloadTask ? m_MapdownloadAmount : (int)m_pMapdownloadTask->Current(); }
+	virtual int MapDownloadTotalsize() { return !m_pMapdownloadTask ? m_MapdownloadTotalsize : (int)m_pMapdownloadTask->Size(); }
 
 	void PumpNetwork();
 
