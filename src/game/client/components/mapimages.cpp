@@ -45,7 +45,6 @@ void CMapImages::OnMapLoad()
 		else
 		{
 			void *pData = pMap->GetData(pImg->m_ImageData);
-			if (!pData) {Client()->DisconnectWithReason("out of memory loading BG image"); return;}
 			m_aTextures[i] = Graphics()->LoadTextureRaw(pImg->m_Width, pImg->m_Height, CImageInfo::FORMAT_RGBA, pData, CImageInfo::FORMAT_RGBA, 0);
 			pMap->UnloadData(pImg->m_ImageData);
 		}
@@ -81,7 +80,6 @@ void CMapImages::LoadBackground(class IMap *pMap)
 		else
 		{
 			void *pData = pMap->GetData(pImg->m_ImageData);
-			if (!pData) {Client()->DisconnectWithReason("out of memory loading BG image"); return;}
 			m_aTextures[i] = Graphics()->LoadTextureRaw(pImg->m_Width, pImg->m_Height, CImageInfo::FORMAT_RGBA, pData, CImageInfo::FORMAT_RGBA, 0);
 			pMap->UnloadData(pImg->m_ImageData);
 		}
