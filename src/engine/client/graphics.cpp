@@ -1021,7 +1021,7 @@ void CGraphics_Wii::Swap()
 	
 	VIDEO_SetNextFramebuffer(xfbs[curFB]);
 	VIDEO_Flush();
-	VIDEO_WaitVSync();
+	if (g_Config.m_GfxVsync) VIDEO_WaitVSync();
 }
 
 
