@@ -286,6 +286,8 @@ void *CDataFileReader::GetDataImpl(int Index, int Swap)
 	// load it if needed
 	if(!m_pDataFile->m_ppDataPtrs[Index])
 	{
+		mem_set_heap(0); // switch to mem1
+
 		// fetch the data size
 		int DataSize = GetDataSize(Index);
 #if defined(CONF_ARCH_ENDIAN_BIG)
@@ -329,6 +331,8 @@ void *CDataFileReader::GetDataImpl(int Index, int Swap)
 		if(Swap && SwapSize)
 			swap_endian(m_pDataFile->m_ppDataPtrs[Index], sizeof(int), SwapSize/sizeof(int));
 #endif
+
+		mem_set_heap(1); // switch to mem2
 	}
 
 	return m_pDataFile->m_ppDataPtrs[Index];
@@ -350,8 +354,10 @@ void CDataFileReader::UnloadData(int Index)
 		return;
 
 	//
+	mem_set_heap(0); // switch to mem1
 	mem_free(m_pDataFile->m_ppDataPtrs[Index]);
 	m_pDataFile->m_ppDataPtrs[Index] = 0x0;
+	mem_set_heap(1); // switch to mem2
 }
 
 int CDataFileReader::GetItemSize(int Index)

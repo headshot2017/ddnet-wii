@@ -78,6 +78,8 @@
 	#include <dirent.h>
 	#include <gccore.h>
 	#include <ogc/lwp_watchdog.h>
+	#include <ogc/lwp_heap.h>
+	#include <ogc/machine/processor.h>
 
 #else
 	#error NOT IMPLEMENTED
@@ -343,38 +345,63 @@ void dbg_logger_file(const char *filename)
 }
 /* */
 
-typedef struct MEMHEADER
-{
-	const char *filename;
-	int line;
-	int size;
-	struct MEMHEADER *prev;
-	struct MEMHEADER *next;
-} MEMHEADER;
+static heap_cntrl memHeap[2];
+static int currHeap;
+static bool mem_inited = false;
 
-typedef struct MEMTAIL
+static void mem_init()
 {
-	int guard;
-} MEMTAIL;
+	if (mem_inited) return;
+	mem_inited = true;
+	currHeap = 1;
 
-static struct MEMHEADER *first = 0;
-static const int MEM_GUARD_VAL = 0xbaadc0de;
+	int size[2] = {
+		12*1024*1024,
+		32*1024*1024
+	};
+
+	u32 level;
+	_CPU_ISR_Disable(level);
+	void *mem1_heap_ptr = (void *)((u32)SYS_GetArena1Hi()-size[0]);
+	void *mem2_heap_ptr = (void *)((u32)SYS_GetArena2Hi()-size[1]);
+	SYS_SetArena1Hi(mem1_heap_ptr);
+	SYS_SetArena2Hi(mem2_heap_ptr);
+	_CPU_ISR_Restore(level);
+	__lwp_heap_init(&memHeap[0], mem1_heap_ptr, size[0], PPC_CACHE_ALIGNMENT);
+	__lwp_heap_init(&memHeap[1], mem2_heap_ptr, size[1], PPC_CACHE_ALIGNMENT);
+}
+
+void mem_set_heap(int curr)
+{
+	currHeap = curr;
+}
+
+int mem_get_heap() {return currHeap;}
 
 void *mem_alloc_debug(const char *filename, int line, unsigned size, unsigned alignment)
 {
-	return malloc(size);
+	if (!mem_inited) mem_init();
+	dbg_msg("mem", "alloc to %d...", currHeap);
+	void* a = __lwp_heap_allocate(&memHeap[currHeap], size);
+	dbg_msg("mem", "alloc to %d 0x%08x - 0x%08x 0x%08x", currHeap, a, SYS_GetArena1Hi(), SYS_GetArena2Hi());
+	return a;
+	//return malloc(size);
 }
 
 void mem_free(void *p)
 {
 	if(p)
 	{
-		free(p);
+		dbg_msg("mem", "free %d 0x%08x - 0x%08x 0x%08x", currHeap, p, SYS_GetArena1Hi(), SYS_GetArena2Hi());
+		int heapId = (p >= SYS_GetArena2Hi()) ? 1 : 0;
+		__lwp_heap_free(&memHeap[heapId], p);
+		//free(p);
 	}
 }
 
 void mem_debug_dump(IOHANDLE file)
 {
+	/*
 	char buf[1024];
 	MEMHEADER *header = first;
 	if(!file)
@@ -392,6 +419,7 @@ void mem_debug_dump(IOHANDLE file)
 
 		io_close(file);
 	}
+	*/
 }
 
 
@@ -412,6 +440,7 @@ void mem_zero(void *block,unsigned size)
 
 int mem_check_imp()
 {
+	/*
 	MEMHEADER *header = first;
 	while(header)
 	{
@@ -424,6 +453,7 @@ int mem_check_imp()
 		header = header->next;
 	}
 
+	*/
 	return 1;
 }
 
@@ -618,7 +648,7 @@ typedef mutex_t LOCKINTERNAL;
 
 LOCK lock_create()
 {
-	LOCKINTERNAL *lock = (LOCKINTERNAL*)mem_alloc(sizeof(LOCKINTERNAL), 4);
+	LOCKINTERNAL *lock = (LOCKINTERNAL*)malloc(sizeof(LOCKINTERNAL));
 
 #if defined(CONF_FAMILY_UNIX)
 	pthread_mutex_init(lock, 0x0);

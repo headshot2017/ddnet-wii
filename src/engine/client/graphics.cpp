@@ -33,6 +33,11 @@ static Mtx44 mtx_identity = {
 	0.f, 0.f, 0.f, 1.f
 };
 
+void* mem_alloc_png(long unsigned size)
+{
+	return mem_alloc(size, 1);
+}
+
 
 void CGraphics_Wii::Flush()
 {
@@ -382,6 +387,9 @@ int CGraphics_Wii::LoadTextureRawSub(int TextureID, int x, int y, int Width, int
 
 int CGraphics_Wii::LoadTextureRaw(int Width, int Height, int Format, const void *pData, int StoreFormat, int Flags)
 {
+	int oldHeap = mem_get_heap();
+	mem_set_heap(1); // perform loading in mem2
+
 	u8* pTexData = (u8*)pData;
 	u8* pTmpData = 0;
 	int StoreGXformat = 0;
@@ -451,6 +459,8 @@ int CGraphics_Wii::LoadTextureRaw(int Width, int Height, int Format, const void 
 		m_aTextures[Tex].m_MemSize = Width*Height*PixelSize;
 	}
 
+	mem_set_heap(oldHeap);
+
 	m_TextureMemoryUsage += m_aTextures[Tex].m_MemSize;
 	return Tex;
 }
@@ -485,8 +495,11 @@ int CGraphics_Wii::LoadPNG(CImageInfo *pImg, const char *pFilename, int StorageT
 	unsigned char *pBuffer;
 	png_t Png; // ignore_convention
 
+	int oldHeap = mem_get_heap();
+	mem_set_heap(1); // load the png in mem2
+
 	// open file for reading
-	png_init(0,0); // ignore_convention
+	png_init(mem_alloc_png, mem_free); // ignore_convention
 
 	IOHANDLE File = m_pStorage->OpenFile(pFilename, IOFLAG_READ, StorageType, aCompleteFilename, sizeof(aCompleteFilename));
 	if(File)
@@ -524,6 +537,9 @@ int CGraphics_Wii::LoadPNG(CImageInfo *pImg, const char *pFilename, int StorageT
 	else if(Png.color_type == PNG_TRUECOLOR_ALPHA) // ignore_convention
 		pImg->m_Format = CImageInfo::FORMAT_RGBA;
 	pImg->m_pData = pBuffer;
+
+	mem_set_heap(oldHeap);
+
 	return 1;
 }
 

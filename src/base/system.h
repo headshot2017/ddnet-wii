@@ -73,6 +73,9 @@ void dbg_msg(const char *sys, const char *fmt, ...);
 
 /* Group: Memory */
 
+void mem_set_heap(int curr);
+int mem_get_heap();
+
 /*
 	Function: mem_alloc
 		Allocates memory.
