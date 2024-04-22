@@ -357,17 +357,17 @@ static void mem_init()
 
 	int size[2] = {
 		12*1024*1024,
-		32*1024*1024
+		12*1024*1024
 	};
 
 	u32 level;
 	_CPU_ISR_Disable(level);
-	void *mem1_heap_ptr = (void *)((u32)SYS_GetArena1Hi()-size[0]);
+	//void *mem1_heap_ptr = (void *)((u32)SYS_GetArena1Hi()-size[0]);
 	void *mem2_heap_ptr = (void *)((u32)SYS_GetArena2Hi()-size[1]);
-	SYS_SetArena1Hi(mem1_heap_ptr);
+	//SYS_SetArena1Hi(mem1_heap_ptr);
 	SYS_SetArena2Hi(mem2_heap_ptr);
 	_CPU_ISR_Restore(level);
-	__lwp_heap_init(&memHeap[0], mem1_heap_ptr, size[0], PPC_CACHE_ALIGNMENT);
+	//__lwp_heap_init(&memHeap[0], mem1_heap_ptr, size[0], PPC_CACHE_ALIGNMENT);
 	__lwp_heap_init(&memHeap[1], mem2_heap_ptr, size[1], PPC_CACHE_ALIGNMENT);
 }
 
@@ -381,9 +381,15 @@ int mem_get_heap() {return currHeap;}
 void *mem_alloc_debug(const char *filename, int line, unsigned size, unsigned alignment)
 {
 	if (!mem_inited) mem_init();
-	dbg_msg("mem", "alloc to %d...", currHeap);
+	//dbg_msg("mem", "alloc to %d...", currHeap);
+	if (!currHeap)
+	{
+		void* a = malloc(size);
+		//dbg_msg("mem", "alloc to %d 0x%08x - 0x%08x 0x%08x", currHeap, a, SYS_GetArena1Hi(), SYS_GetArena2Hi());
+		return a;
+	}
 	void* a = __lwp_heap_allocate(&memHeap[currHeap], size);
-	dbg_msg("mem", "alloc to %d 0x%08x - 0x%08x 0x%08x", currHeap, a, SYS_GetArena1Hi(), SYS_GetArena2Hi());
+	//dbg_msg("mem", "alloc to %d 0x%08x - 0x%08x 0x%08x", currHeap, a, SYS_GetArena1Hi(), SYS_GetArena2Hi());
 	return a;
 	//return malloc(size);
 }
@@ -392,9 +398,10 @@ void mem_free(void *p)
 {
 	if(p)
 	{
-		dbg_msg("mem", "free %d 0x%08x - 0x%08x 0x%08x", currHeap, p, SYS_GetArena1Hi(), SYS_GetArena2Hi());
-		int heapId = (p >= SYS_GetArena2Hi()) ? 1 : 0;
-		__lwp_heap_free(&memHeap[heapId], p);
+		//int heapId = (p >= SYS_GetArena2Hi()) ? 1 : 0;
+		//dbg_msg("mem", "free %d 0x%08x - 0x%08x 0x%08x", heapId, p, SYS_GetArena1Hi(), SYS_GetArena2Hi());
+		//__lwp_heap_free(&memHeap[heapId], p);
+		(p >= SYS_GetArena2Hi()) ? __lwp_heap_free(&memHeap[1], p) : free(p);
 		//free(p);
 	}
 }
