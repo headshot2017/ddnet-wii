@@ -1,8 +1,10 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <unordered_map>
+#include <math.h>
 
 #include <base/system.h>
+#include <base/math.h>
 #include <engine/shared/config.h>
 #include <engine/graphics.h>
 #include <engine/input.h>
@@ -17,19 +19,51 @@
 #include "keynames.h"
 #undef KEYS_INCLUDE
 
+#include <ogc/pad.h>
 #include <wiiuse/wpad.h>
 
-// TODO: nunchuk
 std::unordered_map<int, int> Wiikeys = {
-	{WPAD_BUTTON_LEFT, KEY_a},
-	{WPAD_BUTTON_RIGHT, KEY_d},
 	{WPAD_BUTTON_1, KEY_RETURN},
-	{WPAD_BUTTON_2, KEY_SPACE},
-	{WPAD_BUTTON_A, KEY_MOUSE_1},
-	{WPAD_BUTTON_B, KEY_MOUSE_2},
 	{WPAD_BUTTON_MINUS, KEY_MOUSE_WHEEL_DOWN},
 	{WPAD_BUTTON_PLUS, KEY_ESCAPE},
+	{WPAD_BUTTON_UP, KEY_RSHIFT},
+	{WPAD_BUTTON_DOWN, KEY_LSHIFT},
+	{WPAD_BUTTON_LEFT, KEY_LEFT},
+	{WPAD_BUTTON_RIGHT, KEY_RIGHT},
+	{WPAD_NUNCHUK_BUTTON_C, KEY_SPACE},
+	{WPAD_NUNCHUK_BUTTON_Z, KEY_MOUSE_WHEEL_UP},
+	// nunchuk joystick: mouse
 };
+
+std::unordered_map<int, int> WiiClassickeys = {
+	{WPAD_CLASSIC_BUTTON_Y, KEY_RETURN},
+	{WPAD_CLASSIC_BUTTON_UP, KEY_RSHIFT},
+	{WPAD_CLASSIC_BUTTON_DOWN, KEY_LSHIFT},
+	{WPAD_CLASSIC_BUTTON_LEFT, KEY_LEFT},
+	{WPAD_CLASSIC_BUTTON_RIGHT, KEY_RIGHT},
+	{WPAD_CLASSIC_BUTTON_ZL, KEY_MOUSE_WHEEL_UP},
+	{WPAD_CLASSIC_BUTTON_ZR, KEY_MOUSE_WHEEL_DOWN},
+	{WPAD_CLASSIC_BUTTON_PLUS, KEY_ESCAPE},
+	{WPAD_CLASSIC_BUTTON_B, KEY_SPACE},
+	// left/right movement of left joystick: KEY_a, KEY_d
+	// right joystick: mouse
+	// L/R shoulders: KEY_MOUSE_2, KEY_MOUSE_1
+};
+
+std::unordered_map<int, int> GCkeys = {
+	{PAD_BUTTON_Y, KEY_RETURN},
+	{PAD_BUTTON_UP, KEY_RSHIFT},
+	{PAD_BUTTON_DOWN, KEY_LSHIFT},
+	{PAD_BUTTON_LEFT, KEY_LEFT},
+	{PAD_BUTTON_RIGHT, KEY_RIGHT},
+	{PAD_TRIGGER_Z, KEY_MOUSE_WHEEL_DOWN},
+	{PAD_BUTTON_START, KEY_ESCAPE},
+	{PAD_BUTTON_B, KEY_SPACE},
+	// left/right movement of left joystick: KEY_a, KEY_d
+	// right joystick: mouse
+	// L/R shoulders: KEY_MOUSE_2, KEY_MOUSE_1
+};
+
 
 void CInput::AddEvent(int Unicode, int Key, int Flags)
 {
@@ -42,13 +76,46 @@ void CInput::AddEvent(int Unicode, int Key, int Flags)
 	}
 }
 
+bool CInput::LeftClick()
+{
+	if (m_InputMode == INPUTMODE_GAMECUBE)
+		return PAD_TriggerR(0) >= 128 || PAD_ButtonsHeld(0) & PAD_BUTTON_A;
+	if (m_InputMode == INPUTMODE_CLASSIC)
+		return WPAD_Data(0)->exp.classic.r_shoulder >= 0.5f || WPAD_ButtonsHeld(0) & WPAD_CLASSIC_BUTTON_A;
+	return WPAD_ButtonsHeld(0) & WPAD_BUTTON_A;
+}
+
+bool CInput::RightClick()
+{
+	if (m_InputMode == INPUTMODE_GAMECUBE)
+		return PAD_TriggerL(0) >= 128;
+	if (m_InputMode == INPUTMODE_CLASSIC)
+		return WPAD_Data(0)->exp.classic.l_shoulder >= 0.5f;
+	return WPAD_ButtonsHeld(0) & WPAD_BUTTON_B;
+}
+
+int CInput::LeftJoystickX()
+{
+	if (m_InputMode == INPUTMODE_GAMECUBE)
+		return (PAD_StickX(0) >= 64) ? 1 : (PAD_StickX(0) <= -64) ? -1 : 0;
+
+	float ang = 0;
+
+	if (m_InputMode == INPUTMODE_CLASSIC && WPAD_Data(0)->exp.classic.ljs.mag >= 0.5f)
+		ang = WPAD_Data(0)->exp.classic.ljs.ang;
+	else if (m_InputMode == INPUTMODE_WIIMOTE && WPAD_Data(0)->exp.nunchuk.js.mag >= 0.5f)
+		ang = WPAD_Data(0)->exp.nunchuk.js.ang;
+
+	return (ang >= 45 && ang <= 135) ? 1 : (ang <= -45 && ang >= -135) ? -1 : 0;
+}
+
 CInput::CInput()
 {
 	mem_zero(m_aInputCount, sizeof(m_aInputCount));
 	mem_zero(m_aInputState, sizeof(m_aInputState));
 
 	m_InputCurrent = 0;
-	m_InputGrabbed = 0;
+	m_InputMode = INPUTMODE_WIIMOTE;
 	m_InputDispatched = false;
 
 	m_LastRelease = 0;
@@ -63,12 +130,32 @@ void CInput::Init()
 {
 	m_pGraphics = Kernel()->RequestInterface<IEngineGraphics>();
 
+	PAD_Init();
+
 	WPAD_Init();
 	WPAD_SetDataFormat(0, WPAD_FMT_BTNS_ACC_IR);
 }
 
 void CInput::MouseRelative(float *x, float *y)
 {
+	static float nx = 0, ny = 0;
+	float Sens = ((g_Config.m_ClDyncam && g_Config.m_ClDyncamMousesens) ? g_Config.m_ClDyncamMousesens : g_Config.m_InpMousesens) / 100.0f;
+
+	// handle gamecube controller first
+	if (m_InputMode == INPUTMODE_GAMECUBE)
+	{
+		float joyX = PAD_SubStickX(0) / 128.f;
+		float joyY = -PAD_SubStickY(0) / 128.f;
+
+		nx = clamp(nx + (joyX*Sens), 0.f, (float)Graphics()->ScreenWidth());
+		ny = clamp(ny + (joyY*Sens), 0.f, (float)Graphics()->ScreenHeight());
+
+		*x = nx;
+		*y = ny;
+		return;
+	}
+
+	// then try wiimote input
 	u32 type;
 	int res = WPAD_Probe(0, &type);
 
@@ -80,6 +167,19 @@ void CInput::MouseRelative(float *x, float *y)
 	}
 
 	WPADData* wd = WPAD_Data(0);
+
+	if (m_InputMode == INPUTMODE_CLASSIC && type == WPAD_EXP_CLASSIC)
+	{
+		float joyX = cosf((wd->exp.classic.rjs.ang-90) / 180 * M_PI) * wd->exp.classic.rjs.mag;
+		float joyY = sinf((wd->exp.classic.rjs.ang-90) / 180 * M_PI) * wd->exp.classic.rjs.mag;
+
+		nx = clamp(nx + (joyX*Sens), 0.f, (float)Graphics()->ScreenWidth());
+		ny = clamp(ny + (joyY*Sens), 0.f, (float)Graphics()->ScreenHeight());
+
+		*x = nx;
+		*y = ny;
+		return;
+	}
 
 	*x = -20+wd->ir.x*1.25f;
 	*y = -20+wd->ir.y*1.25f;
@@ -130,15 +230,18 @@ int CInput::Update()
 
 	{
 		WPAD_ScanPads();
+		PAD_ScanPads();
 
-		int held = WPAD_ButtonsHeld(0);
-		if (held & WPAD_BUTTON_A) m_aInputState[m_InputCurrent][KEY_MOUSE_1] = 1;
-		if (held & WPAD_BUTTON_B) m_aInputState[m_InputCurrent][KEY_MOUSE_2] = 1;
+		static bool lastLeftClick = false;
+		static bool lastRightClick = false;
+		static int lastJoyX = 0;
 
-		int down = WPAD_ButtonsDown(0);
+		int down = (m_InputMode == INPUTMODE_GAMECUBE) ? PAD_ButtonsDown(0) : WPAD_ButtonsDown(0);
 		int Key;
 
-		for(std::unordered_map<int, int>::iterator it = Wiikeys.begin(); it != Wiikeys.end(); ++it)
+		std::unordered_map<int, int>& chosenKeys = (m_InputMode == INPUTMODE_GAMECUBE) ? GCkeys : (m_InputMode == INPUTMODE_CLASSIC) ? WiiClassickeys : Wiikeys;
+
+		for(std::unordered_map<int, int>::iterator it = chosenKeys.begin(); it != chosenKeys.end(); ++it)
 		{
 			if (!(down & it->first)) continue;
 			Key = it->second;
@@ -147,9 +250,9 @@ int CInput::Update()
 			AddEvent(0, Key, IInput::FLAG_PRESS);
 		}
 
-		int up = WPAD_ButtonsUp(0);
+		int up = (m_InputMode == INPUTMODE_GAMECUBE) ? PAD_ButtonsUp(0) : WPAD_ButtonsUp(0);
 
-		for(std::unordered_map<int, int>::iterator it = Wiikeys.begin(); it != Wiikeys.end(); ++it)
+		for(std::unordered_map<int, int>::iterator it = chosenKeys.begin(); it != chosenKeys.end(); ++it)
 		{
 			if (!(up & it->first)) continue;
 			Key = it->second;
@@ -162,7 +265,66 @@ int CInput::Update()
 				m_LastRelease = time_get();
 			}
 		}
+
+		bool click = LeftClick();
+		int action = (click) ? IInput::FLAG_PRESS : IInput::FLAG_RELEASE;
+		Key = KEY_MOUSE_1;
+		if (lastLeftClick != click)
+		{
+			m_aInputCount[m_InputCurrent][Key].m_Presses++;
+			if (click) m_aInputState[m_InputCurrent][Key] = 1;
+			AddEvent(0, Key, action);
+
+			lastLeftClick = click;
+		}
+
+		click = RightClick();
+		action = (click) ? IInput::FLAG_PRESS : IInput::FLAG_RELEASE;
+		Key = KEY_MOUSE_2;
+		if (lastRightClick != click)
+		{
+			m_aInputCount[m_InputCurrent][Key].m_Presses++;
+			if (click) m_aInputState[m_InputCurrent][Key] = 1;
+			AddEvent(0, Key, action);
+
+			lastRightClick = click;
+		}
+
+		int joyX = LeftJoystickX();
+		if (lastJoyX != joyX)
+		{
+			// release key
+			Key = (lastJoyX == -1) ? KEY_a : KEY_d;
+			if (lastJoyX)
+			{
+				m_aInputCount[m_InputCurrent][Key].m_Presses++;
+				AddEvent(0, Key, IInput::FLAG_RELEASE);
+			}
+
+			// press key
+			Key = (joyX == -1) ? KEY_a : KEY_d;
+			if (joyX)
+			{
+				m_aInputCount[m_InputCurrent][Key].m_Presses++;
+				m_aInputState[m_InputCurrent][Key] = 1;
+				AddEvent(0, Key, IInput::FLAG_PRESS);
+			}
+
+			lastJoyX = joyX;
+		}
 	}
+
+	int lastMode = m_InputMode;
+
+	if (WPAD_ButtonsDown(0) & WIIMOTE_BUTTON_ALL || (WPAD_Data(0)->exp.type == EXP_NUNCHUK && WPAD_Data(0)->exp.nunchuk.btns))
+		m_InputMode = INPUTMODE_WIIMOTE;
+	else if (WPAD_Data(0)->exp.type == EXP_CLASSIC && WPAD_Data(0)->exp.classic.btns)
+		m_InputMode = INPUTMODE_CLASSIC;
+	else if (PAD_ButtonsDown(0))
+		m_InputMode = INPUTMODE_GAMECUBE;
+
+	if (lastMode != m_InputMode)
+		dbg_msg("wii input", "changed input mode to %d", m_InputMode);
 
 	/*
 	{

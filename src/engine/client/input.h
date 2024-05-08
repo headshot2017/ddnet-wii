@@ -3,11 +3,18 @@
 #ifndef ENGINE_CLIENT_INPUT_H
 #define ENGINE_CLIENT_INPUT_H
 
+enum
+{
+	INPUTMODE_WIIMOTE,
+	INPUTMODE_CLASSIC,
+	INPUTMODE_GAMECUBE
+};
+
 class CInput : public IEngineInput
 {
 	IEngineGraphics *m_pGraphics;
 
-	int m_InputGrabbed;
+	int m_InputMode;
 
 	int64 m_LastRelease;
 	int64 m_ReleaseDelta;
@@ -17,6 +24,10 @@ class CInput : public IEngineInput
 	void AddEvent(int Unicode, int Key, int Flags);
 
 	IEngineGraphics *Graphics() { return m_pGraphics; }
+
+	bool LeftClick();
+	bool RightClick();
+	int LeftJoystickX();
 
 public:
 	CInput();
