@@ -357,7 +357,7 @@ static void mem_init()
 
 	int size[2] = {
 		12*1024*1024,
-		12*1024*1024
+		16*1024*1024
 	};
 
 	u32 level;
