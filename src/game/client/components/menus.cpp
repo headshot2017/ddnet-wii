@@ -1832,7 +1832,7 @@ void CMenus::OnRender()
 	Graphics()->QuadsBegin();
 	Graphics()->SetColor(1,1,1,1);
 	Graphics()->QuadsSetRotation((wd->ir.angle+45) / 180.f * pi);
-	Graphics()->QuadsSetRotationCenter(mx, my);
+	Graphics()->QuadsSetRotationCenter(mx+1, my+1);
 	IGraphics::CQuadItem QuadItem(mx, my, 24, 24);
 	Graphics()->QuadsDrawTL(&QuadItem, 1);
 	Graphics()->QuadsEnd();
