@@ -7,6 +7,16 @@
 #include "network.h"
 #include "huffman.h"
 
+SECURITY_TOKEN ToSecurityToken(const unsigned char *pData)
+{
+	return bytes_be_to_uint(pData);
+}
+
+void WriteSecurityToken(unsigned char *pData, SECURITY_TOKEN Token)
+{
+	uint_to_bytes_be(pData, Token);
+}
+
 void CNetRecvUnpacker::Clear()
 {
 	m_Valid = false;
@@ -124,7 +134,7 @@ void CNetBase::SendPacket(NETSOCKET Socket, NETADDR *pAddr, CNetPacketConstruct 
 	{
 		// append security token
 		// if SecurityToken is NET_SECURITY_TOKEN_UNKNOWN we will still append it hoping to negotiate it
-		mem_copy(&pPacket->m_aChunkData[pPacket->m_DataSize], &SecurityToken, sizeof(SecurityToken));
+		WriteSecurityToken(pPacket->m_aChunkData + pPacket->m_DataSize, SecurityToken);
 		pPacket->m_DataSize += sizeof(SecurityToken);
 	}
 

@@ -4,15 +4,6 @@
 #include "config.h"
 #include "network.h"
 
-SECURITY_TOKEN ToSecurityToken(unsigned char* pData)
-{
-#ifdef CONF_ARCH_ENDIAN_BIG
-	return (int)(pData[0] << 24) | (pData[1] << 16) | (pData[2] << 8) | pData[3];
-#else
-	return (int)pData[0] | (pData[1] << 8) | (pData[2] << 16) | (pData[3] << 24);
-#endif
-}
-
 void CNetConnection::ResetStats()
 {
 	mem_zero(&m_Stats, sizeof(m_Stats));

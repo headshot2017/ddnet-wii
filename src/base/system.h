@@ -1345,6 +1345,33 @@ int str_utf8_encode(char *ptr, int chr);
 */
 int str_utf8_check(const char *str);
 
+/**
+ * Packs 4 big endian bytes into an unsigned.
+ *
+ * @param bytes Pointer to an array of bytes that will be packed.
+ *
+ * @return The packed unsigned.
+ *
+ * @remark Assumes the passed array is least 4 bytes in size.
+ * @remark Assumes unsigned is 4 bytes in size.
+ *
+ * @see uint_to_bytes_be
+ */
+unsigned bytes_be_to_uint(const unsigned char *bytes);
+
+/**
+ * Packs an unsigned into 4 big endian bytes.
+ *
+ * @param bytes Pointer to an array where the bytes will be stored.
+ * @param value The values that will be packed into the array.
+ *
+ * @remark Assumes the passed array is least 4 bytes in size.
+ * @remark Assumes unsigned is 4 bytes in size.
+ *
+ * @see bytes_be_to_uint
+ */
+void uint_to_bytes_be(unsigned char *bytes, unsigned value);
+
 int pid();
 
 /*
