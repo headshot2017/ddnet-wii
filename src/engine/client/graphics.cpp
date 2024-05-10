@@ -440,6 +440,11 @@ int CGraphics_Wii::LoadTextureRaw(int Width, int Height, int Format, const void 
 
 	int size = Width * Height * 4;
 	m_aTextures[Tex].pixels = (u32*)memalign(32, 32 + size);
+	if (!m_aTextures[Tex].pixels)
+	{
+		mem_free(pFinalData);
+		return m_InvalidTexture;
+	}
 
 	GX_InitTexObj(&m_aTextures[Tex].obj, m_aTextures[Tex].pixels, Width, Height, GX_TF_RGBA8, GX_REPEAT, GX_REPEAT, GX_FALSE);
 	//GX_InitTexObjFilterMode(m_aTextures[Tex].obj, GX_NEAR, GX_NEAR);
