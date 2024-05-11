@@ -920,6 +920,15 @@ int CGraphics_Wii::Init()
 
 	mode = VIDEO_GetPreferredMode(NULL);
 
+	if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
+		m_ScreenWidth = 16.0f*((f32)mode->xfbHeight)/9.0f;
+	else
+		m_ScreenWidth = 4.0f*((f32)mode->xfbHeight)/3.0f;
+
+	m_ScreenHeight = mode->efbHeight;
+	g_Config.m_GfxScreenWidth = m_ScreenWidth;
+	g_Config.m_GfxScreenHeight = m_ScreenHeight;
+
 	xfbs[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(mode));
 	xfbs[1] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(mode));
 
@@ -956,13 +965,6 @@ int CGraphics_Wii::Init()
 	GX_InvVtxCache();
 	
 	GX_SetNumChans(1);
-
-
-
-	m_ScreenWidth = mode->fbWidth;
-	m_ScreenHeight = mode->efbHeight;
-	g_Config.m_GfxScreenWidth = m_ScreenWidth;
-	g_Config.m_GfxScreenHeight = m_ScreenHeight;
 
 
 	// create null texture, will get id=0
