@@ -40,6 +40,7 @@ void CMapImages::OnMapLoad()
 			char Buf[256];
 			char *pName = (char *)pMap->GetData(pImg->m_ImageName);
 			str_format(Buf, sizeof(Buf), "mapres/%s.png", pName);
+			dbg_msg("img", "1 '%s' '%d'", pName, pImg->m_ImageName);
 			m_aTextures[i] = Graphics()->LoadTexture(Buf, IStorage::TYPE_ALL, CImageInfo::FORMAT_AUTO, 0);
 		}
 		else
@@ -75,7 +76,7 @@ void CMapImages::LoadBackground(class IMap *pMap)
 			char Buf[256];
 			char *pName = (char *)pMap->GetData(pImg->m_ImageName);
 			str_format(Buf, sizeof(Buf), "mapres/%s.png", pName);
-			dbg_msg("img", "'%s' '%d'", pName, pImg->m_ImageName);
+			dbg_msg("img", "2 '%s' '%d'", pName, pImg->m_ImageName);
 			m_aTextures[i] = Graphics()->LoadTexture(Buf, IStorage::TYPE_ALL, CImageInfo::FORMAT_AUTO, 0);
 		}
 		else
