@@ -206,6 +206,11 @@ int CInput::MouseDoubleClick()
 	return 0;
 }
 
+float CInput::MouseRotation()
+{
+	return (m_InputMode == INPUTMODE_WIIMOTE) ? (WPAD_Data(0)->ir.angle+45) / 180.f * pi : 0;
+}
+
 void CInput::ClearKeyStates()
 {
 	mem_zero(m_aInputState, sizeof(m_aInputState));
@@ -258,24 +263,25 @@ int CInput::Update()
 			Key = it->second;
 			m_aInputCount[m_InputCurrent][Key].m_Presses++;
 			AddEvent(0, Key, IInput::FLAG_RELEASE);
-
-			if (Key == KEY_MOUSE_1)
-			{
-				m_ReleaseDelta = time_get() - m_LastRelease;
-				m_LastRelease = time_get();
-			}
 		}
 
+
 		bool click = LeftClick();
+		m_aInputState[m_InputCurrent][KEY_MOUSE_1] = LeftClick();
+
 		int action = (click) ? IInput::FLAG_PRESS : IInput::FLAG_RELEASE;
 		Key = KEY_MOUSE_1;
 		if (lastLeftClick != click)
 		{
 			m_aInputCount[m_InputCurrent][Key].m_Presses++;
-			if (click) m_aInputState[m_InputCurrent][Key] = 1;
 			AddEvent(0, Key, action);
 
 			lastLeftClick = click;
+			if (!click)
+			{
+				m_ReleaseDelta = time_get() - m_LastRelease;
+				m_LastRelease = time_get();
+			}
 		}
 
 		click = RightClick();

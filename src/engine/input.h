@@ -80,6 +80,8 @@ public:
 	virtual int MouseDoubleClick() = 0;
 
 	virtual void MouseRelative(float *x, float *y) = 0;
+
+	virtual float MouseRotation() = 0;
 };
 
 

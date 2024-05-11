@@ -39,6 +39,8 @@ public:
 	virtual void MouseModeRelative();
 	virtual int MouseDoubleClick();
 
+	virtual float MouseRotation();
+
 	void ClearKeyStates();
 	int KeyState(int Key);
 

@@ -54,12 +54,8 @@ bool CEmoticon::OnMouseMove(float x, float y)
 	if(!m_Active)
 		return false;
 
-#if defined(__ANDROID__) // No relative mouse on Android
-	m_SelectorMouse = vec2(x,y);
-#else
-	UI()->ConvertMouseMove(&x, &y);
-	m_SelectorMouse += vec2(x,y);
-#endif
+	m_SelectorMouse = vec2((x - g_Config.m_GfxScreenWidth/2), (y - g_Config.m_GfxScreenHeight/2));
+
 	return true;
 }
 
@@ -184,6 +180,8 @@ void CEmoticon::OnRender()
 	Graphics()->TextureSet(g_pData->m_aImages[IMAGE_CURSOR].m_Id);
 	Graphics()->QuadsBegin();
 	Graphics()->SetColor(1,1,1,1);
+	Graphics()->QuadsSetRotation(Input()->MouseRotation());
+	Graphics()->QuadsSetRotationCenter(m_SelectorMouse.x+Screen.w/2+1, m_SelectorMouse.y+Screen.h/2+1);
 	IGraphics::CQuadItem QuadItem(m_SelectorMouse.x+Screen.w/2,m_SelectorMouse.y+Screen.h/2,24,24);
 	Graphics()->QuadsDrawTL(&QuadItem, 1);
 	Graphics()->QuadsEnd();

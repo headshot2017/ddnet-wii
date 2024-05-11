@@ -152,18 +152,8 @@ bool CSpectator::OnMouseMove(float x, float y)
 	if(!m_Active)
 		return false;
 
-#if defined(__ANDROID__) // No relative mouse on Android
-	m_SelectorMouse = vec2(x,y);
-	if( m_OldMouseX != x || m_OldMouseY != y )
-	{
-		m_OldMouseX = x;
-		m_OldMouseY = y;
-		m_SelectorMouse = vec2((x - g_Config.m_GfxScreenWidth/2), (y - g_Config.m_GfxScreenHeight/2));
-	}
-#else
-	UI()->ConvertMouseMove(&x, &y);
-	m_SelectorMouse += vec2(x,y);
-#endif
+	m_SelectorMouse = vec2((x - g_Config.m_GfxScreenWidth/2), (y - g_Config.m_GfxScreenHeight/2));
+
 	return true;
 }
 
@@ -416,6 +406,8 @@ void CSpectator::OnRender()
 	Graphics()->TextureSet(g_pData->m_aImages[IMAGE_CURSOR].m_Id);
 	Graphics()->QuadsBegin();
 	Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+	Graphics()->QuadsSetRotation(Input()->MouseRotation());
+	Graphics()->QuadsSetRotationCenter(m_SelectorMouse.x+Width/2.0f+1, m_SelectorMouse.y+Height/2.0f+1);
 	IGraphics::CQuadItem QuadItem(m_SelectorMouse.x+Width/2.0f, m_SelectorMouse.y+Height/2.0f, 48.0f, 48.0f);
 	Graphics()->QuadsDrawTL(&QuadItem, 1);
 	Graphics()->QuadsEnd();
