@@ -385,11 +385,11 @@ void *mem_alloc_debug(const char *filename, int line, unsigned size, unsigned al
 	if (!currHeap)
 	{
 		void* a = malloc(size);
-		//dbg_msg("mem", "alloc to %d 0x%08x - 0x%08x 0x%08x", currHeap, a, SYS_GetArena1Hi(), SYS_GetArena2Hi());
+		dbg_msg("mem", "alloc to %d 0x%08x - 0x%08x 0x%08x", currHeap, a, SYS_GetArena1Hi(), SYS_GetArena2Hi());
 		return a;
 	}
 	void* a = __lwp_heap_allocate(&memHeap[currHeap], size);
-	//dbg_msg("mem", "alloc to %d 0x%08x - 0x%08x 0x%08x", currHeap, a, SYS_GetArena1Hi(), SYS_GetArena2Hi());
+	dbg_msg("mem", "alloc to %d 0x%08x - 0x%08x 0x%08x", currHeap, a, SYS_GetArena1Hi(), SYS_GetArena2Hi());
 	return a;
 	//return malloc(size);
 }
