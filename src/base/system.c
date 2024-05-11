@@ -362,12 +362,12 @@ static void mem_init()
 
 	u32 level;
 	_CPU_ISR_Disable(level);
-	//void *mem1_heap_ptr = (void *)((u32)SYS_GetArena1Hi()-size[0]);
+	void *mem1_heap_ptr = (void *)((u32)SYS_GetArena1Hi()-size[0]);
 	void *mem2_heap_ptr = (void *)((u32)SYS_GetArena2Hi()-size[1]);
-	//SYS_SetArena1Hi(mem1_heap_ptr);
+	SYS_SetArena1Hi(mem1_heap_ptr);
 	SYS_SetArena2Hi(mem2_heap_ptr);
 	_CPU_ISR_Restore(level);
-	//__lwp_heap_init(&memHeap[0], mem1_heap_ptr, size[0], PPC_CACHE_ALIGNMENT);
+	__lwp_heap_init(&memHeap[0], mem1_heap_ptr, size[0], PPC_CACHE_ALIGNMENT);
 	__lwp_heap_init(&memHeap[1], mem2_heap_ptr, size[1], PPC_CACHE_ALIGNMENT);
 }
 
@@ -382,12 +382,12 @@ void *mem_alloc_debug(const char *filename, int line, unsigned size, unsigned al
 {
 	if (!mem_inited) mem_init();
 	//dbg_msg("mem", "alloc to %d...", currHeap);
-	if (!currHeap)
+	/*if (!currHeap)
 	{
 		void* a = malloc(size);
 		dbg_msg("mem", "alloc to %d 0x%08x - 0x%08x 0x%08x", currHeap, a, SYS_GetArena1Hi(), SYS_GetArena2Hi());
 		return a;
-	}
+	}*/
 	void* a = __lwp_heap_allocate(&memHeap[currHeap], size);
 	dbg_msg("mem", "alloc to %d 0x%08x - 0x%08x 0x%08x", currHeap, a, SYS_GetArena1Hi(), SYS_GetArena2Hi());
 	return a;
