@@ -27,8 +27,14 @@ jobs:
           mkdir -p apps/ddnet
           cp -r boot.dol meta.xml icon.png data apps/ddnet/
 
-      - name: Upload Artifacts
+      - name: Upload .dol artifact
         uses: actions/upload-artifact@v4
         with:
           name: Wii .dol app
           path: ./apps
+
+      - name: Upload .elf artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: boot.elf
+          path: boot.elf
