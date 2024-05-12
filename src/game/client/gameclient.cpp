@@ -405,11 +405,8 @@ int CGameClient::OnSnapInput(int *pData)
 
 void CGameClient::OnConnected()
 {
-	dbg_msg("gameclient", "init layers with Kernel()");
 	m_Layers.Init(Kernel());
-	dbg_msg("gameclient", "init collision with Layers()");
 	m_Collision.Init(Layers());
-	dbg_msg("gameclient", "inited collision with Layers()");
 
 	RenderTools()->RenderTilemapGenerateSkip(Layers());
 
