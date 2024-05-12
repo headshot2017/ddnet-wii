@@ -3,7 +3,7 @@ on: [push]
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     container:
       image: devkitpro/devkitppc:latest
     steps:
