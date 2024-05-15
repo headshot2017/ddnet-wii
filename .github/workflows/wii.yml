@@ -18,6 +18,7 @@ jobs:
           yes | sudo ./install-devkitpro-pacman
           sudo dkp-pacman -Sy
           yes "" | sudo dkp-pacman -S wii-dev
+          yes | sudo dkp-pacman ppc-zlib ppc-freetype
 
       - name: Generate
         run: |
