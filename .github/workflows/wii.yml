@@ -1,6 +1,10 @@
 name: Wii build
 on: [push]
 
+env:
+  DEVKITPRO: /opt/devkitpro
+  DEVKITPPC: /opt/devkitpro/devkitPPC
+
 jobs:
   build:
     runs-on: ubuntu-latest
