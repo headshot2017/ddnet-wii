@@ -3,11 +3,17 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-    container:
-      image: devkitpro/devkitppc:latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install devkitPPC
+        run: |
+          wget https://apt.devkitpro.org/install-devkitpro-pacman
+          chmod +x ./install-devkitpro-pacman
+          yes | sudo ./install-devkitpro-pacman
+          sudo dkp-pacman -Sy
+          yes "" | sudo dkp-pacman -S wii-dev
 
       - name: Generate
         run: |
